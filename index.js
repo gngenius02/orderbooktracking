@@ -33,7 +33,7 @@ const getTwoDigitPrice = (price) => Number(price).toFixed(2)
 const processEntryBasedOnVolumeAmount = (type, entry) => {
 	let { price, amount: newValue } = entry
 	price = getTwoDigitPrice(price)
-	const curValue = myData[type].get(price) ?? 0
+	const curValue = myData[type].get(price) || 0
 	if (getDifference(curValue, newValue) > findDifferenceOf) {
 		if (checkRetraction(curValue, newValue)) {
 			console.log(
