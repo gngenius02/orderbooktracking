@@ -1,4 +1,4 @@
-const findDifferenceOf = 5 // <~~~~~ this is the threshold that its comparing to see if its bigger then.
+let findDifferenceOf
 
 const { StreamClient } = require('cw-sdk-node')
 
@@ -13,7 +13,13 @@ const myData = { bids: new Map(), asks: new Map(), seqNum: 0 }
 const processRemoval = (type, price) => {
 	entry = getTwoDigitPrice(price)
 	if (Number(myData[type].get(entry)) > findDifferenceOf) {
-		console.log('DELETED::::\t', Number(myData[type].get(entry)), '\tat Price of:::', Number(entry))
+		console.log(
+			type,
+			'DELETED::::\t',
+			Number(myData[type].get(entry)),
+			'\tat Price of:::',
+			Number(entry)
+		)
 	}
 	myData[type].delete(entry)
 }
@@ -31,6 +37,7 @@ const processEntryBasedOnVolumeAmount = (type, entry) => {
 	if (getDifference(curValue, newValue) > findDifferenceOf) {
 		if (checkRetraction(curValue, newValue)) {
 			console.log(
+				type,
 				'RETRACTED:::\t',
 				getDifference(curValue, newValue),
 				'\tat Price of :::',
@@ -38,6 +45,7 @@ const processEntryBasedOnVolumeAmount = (type, entry) => {
 			)
 		} else {
 			console.log(
+				type,
 				'NEW ORDER ::::\t',
 				getDifference(curValue, newValue),
 				'\tat Price of :::',
@@ -85,21 +93,27 @@ client.onError((err) => {
 })
 
 const fetch = require('node-fetch')
+const rl = require('readline').createInterface({ input: process.stdin, output: process.stdout })
 
-fetch('https://api.cryptowat.ch/markets/binance/BTCUSDT/orderbook?limit=5000')
-	.then((r) => r.json())
-	.then((data) => {
-		// console.log(data.result)
-		const { bids, asks, seqNum } = data.result
+rl.question('ENTER THRESHOLD VALUE: (Default = 5) ', (threshold) => {
+	if (!threshold) return (findDifferenceOf = 5)
+	findDifferenceOf = threshold
 
-		for (let [price, amount] of bids) {
-			myData['bids'].set(price.toFixed(2), amount.toFixed(8))
-		}
-		for (let [price, amount] of asks) {
-			myData['asks'].set(price.toFixed(2), amount.toFixed(8))
-		}
-		myData['seqNum'] = seqNum
-		console.log('\nBIDS SIZE:', myData.bids.size, '\nASKS SIZE:', myData.asks.size)
-		console.log('starting websocket', myData)
-		client.connect()
-	})
+	fetch('https://api.cryptowat.ch/markets/binance/BTCUSDT/orderbook?limit=5000')
+		.then((r) => r.json())
+		.then((data) => {
+			// console.log(data.result)
+			const { bids, asks, seqNum } = data.result
+
+			for (let [price, amount] of bids) {
+				myData['bids'].set(price.toFixed(2), amount.toFixed(8))
+			}
+			for (let [price, amount] of asks) {
+				myData['asks'].set(price.toFixed(2), amount.toFixed(8))
+			}
+			myData['seqNum'] = seqNum
+			console.log('\nBIDS SIZE:', myData.bids.size, '\nASKS SIZE:', myData.asks.size)
+			console.log('starting websocket', myData)
+			client.connect()
+		})
+})
