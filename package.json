@@ -1,0 +1,16 @@
+{
+	"name": "cwclient",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"start": "node index.js"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"cw-sdk-node": "link:../cw-sdk-node",
+		"node-fetch": "^2.6.1"
+	}
+}
