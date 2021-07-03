@@ -1,24 +1,14 @@
+const findDifferenceOf = 5 // <~~~~~ this is the threshold that its comparing to see if its bigger then.
+
 const { StreamClient } = require('cw-sdk-node')
 
 const client = new StreamClient({
-	creds: {
-		apiKey: '', // your cw api key
-		secretKey: '' // your cw secret key
-	},
+	creds: { apiKey: '', secretKey: '' },
 	subscriptions: ['markets:579:book:deltas'],
 	logLevel: 'debug'
 })
 
-const findDifferenceOf = 5
-
-const bidMap = new Map()
-const askMap = new Map()
-
-const myData = {
-	bids: new Map(),
-	asks: new Map(),
-	seqNum: 0
-}
+const myData = { bids: new Map(), asks: new Map(), seqNum: 0 }
 
 const processRemoval = (type, price) => {
 	entry = getTwoDigitPrice(price)
@@ -87,32 +77,11 @@ const handleNewDelta = (orderBookDelta) => {
 // Handlers for market and pair data
 client.onMarketUpdate((marketData) => {
 	handleNewDelta(marketData.orderBookDelta)
-	// console.log(myData.seqNum, myData.bids.size, myData.asks.size)
-})
-client.onPairUpdate((pairData) => {
-	console.log(pairData)
 })
 
 // Error handling
 client.onError((err) => {
 	console.error(err)
-})
-
-// You can also listen on state changes
-client.onStateChange((newState) => {
-	console.log('connection state changed:', newState)
-})
-
-client.onConnect(() => {
-	// console.log('connected')
-	// console.info('streaming data for the next 15 seconds...')
-	// setTimeout(() => {
-	// 	client.disconnect()
-	// }, 15 * 1000)
-})
-
-client.onDisconnect(() => {
-	// console.log('done')
 })
 
 const fetch = require('node-fetch')
@@ -134,6 +103,3 @@ fetch('https://api.cryptowat.ch/markets/binance/BTCUSDT/orderbook?limit=5000')
 		console.log('starting websocket', myData)
 		client.connect()
 	})
-
-// Connect to stream
-// client.connect()
