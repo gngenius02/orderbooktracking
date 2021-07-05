@@ -8,6 +8,8 @@ const client = new StreamClient({
 	logLevel: 'none'
 })
 
+const getKeys = (_) => ['bids', 'asks']
+
 const getTime = (_) => new Date().toLocaleTimeString()
 
 const myData = { bids: new Map(), asks: new Map(), seqNum: 0 }
@@ -19,23 +21,34 @@ const checkRetraction = (current, newvalue) => Number(newvalue) < Number(current
 const getTwoDigitPrice = (price) => Number(price).toFixed(2)
 
 const logdata = {
-	bids: [],
-	asks: []
+	set bids(data) {
+		let added
+		if ((added = this._bids.unshift(data)) > 10) {
+			this._bids.pop()
+		}
+		return added
+	},
+	set asks(data) {
+		let added
+		if ((added = this._asks.unshift(data)) > 10) {
+			this._asks.pop()
+		}
+		return added
+	},
+	get getData() {
+		console.log('BIDS')
+		console.table(this._bids.slice(0, 10))
+		console.log('ASKS')
+		console.table(this._asks.slice(0, 10))
+	},
+	_bids: [],
+	_asks: []
 }
 
-const logprep = () => {
+const logprep = (type, data) => {
+	logdata[type] = data
 	console.clear()
-	const objs = Object.entries(logdata);
-	let [key, data] = objs;
-
-	data = data.splice(0,10)
-	const transformed = data.reduce((acc, { time, ...x }) => {
-			acc[time] = x
-			return acc
-		}, {})
-	console.log(key.toUpperCase())
-	console.table(transformed)
-	}
+	logdata.getData
 }
 
 function shouldReport(curValue, newValue, type, price) {
@@ -43,20 +56,17 @@ function shouldReport(curValue, newValue, type, price) {
 		const op = checkRetraction(curValue, newValue) ? '\u25BC' : '\u25B2'
 		const volume = `${op}${diff.toFixed(8).padStart(14)}`
 		price = `${Number(price).toFixed(2)}`
-		logdata[type].unshift({ time: getTime(), volume, price })
-		logprep()
+		logprep(type, { time: getTime(), volume, price })
 	}
-	console.gr
 }
 
 const processRemoval = (type, price) => {
 	entry = getTwoDigitPrice(price)
 	if ((diff = Number(myData[type].get(entry))) > findDifferenceOf) {
-		const op = 'X'
+		const op = '\u274C'
 		const volume = `${op}${diff.toFixed(8).padStart(14)}`
 		price = `${Number(price).toFixed(2)}`
-		logdata[type].unshift({ time: getTime(), volume, price })
-		logprep()
+		logprep(type, { time: getTime(), volume, price })
 	}
 	myData[type].delete(entry)
 }
@@ -75,7 +85,7 @@ const handleNewDelta = (orderBookDelta) => {
 		console.log('this seqNum was the same as last one so droping this packet.')
 		return
 	}
-	;['bids', 'asks'].forEach((key) => {
+	getKeys().forEach((key) => {
 		const { remove, set } = orderBookDelta[key]
 		remove.forEach((entry) => processRemoval(key, entry))
 		set.forEach((entry) => processEntryBasedOnVolumeAmount(key, entry))
@@ -88,7 +98,7 @@ const handleNewSnapshot = (orderBookSnapshot) => {
 		console.log('this seqNum was the same as last one so droping this packet.')
 		return
 	}
-	;['bids', 'asks'].forEach((key) => {
+	getKeys().forEach((key) => {
 		for (let { price, amount } of orderBookSnapshot[key]) {
 			if (myData[key].has(price)) {
 				let curValue = myData[key].get(price)
@@ -99,7 +109,6 @@ const handleNewSnapshot = (orderBookSnapshot) => {
 			myData[key].set(price, amount)
 		}
 	})
-	console.log('Snapshot Processed.')
 }
 
 // Handlers for market and pair data
